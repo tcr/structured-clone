@@ -1,6 +1,6 @@
 # structured-clone
 
-Implements the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/The_structured_clone_algorithm) to clone JSON types, RegExp, Buffers, and Dates. This module also supports serializing and deserializing an object from a buffer.
+Implements the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/The_structured_clone_algorithm). Clone JSON types, RegExp, Buffers, and Dates, returning a cloned object or a buffer that can be deserialized into a structured clone
 
 ```
 npm install structured-clone
