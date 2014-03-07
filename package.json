@@ -8,7 +8,7 @@
     "test": "node_modules/.bin/tap test/*.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "multibuffer": "~2.2.1"
   },
