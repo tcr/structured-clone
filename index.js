@@ -1,6 +1,5 @@
 var cycle = require('./cycle');
 var multibuffer = require('multibuffer')
-var regexpClone = require('./regexp-clone');
 
 
 
@@ -12,8 +11,12 @@ function serialize (obj) {
 		multibuffer.pack(map.dates.map(function (date) {
 			return new Buffer(date.toISOString());
 		})),
-		multibuffer.pack(map.regexps.map(function (regex) {
-			return new Buffer(JSON.stringify(regexpClone(regex)));
+		multibuffer.pack(map.regexps.map(function (regexp) {
+      var flags = [];
+      if (regexp.global) flags.push('g');
+      if (regexp.multiline) flags.push('m');
+      if (regexp.ignoreCase) flags.push('i');
+			return new Buffer(JSON.stringify([regexp.source, flags.join('')]));
 		}))
 	]);
 }
