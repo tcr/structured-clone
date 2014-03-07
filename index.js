@@ -38,7 +38,14 @@ function deserialize (buf) {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/The_structured_clone_algorithm
-function clone (oToBeCloned) {
+function clone (oToBeCloned, cloned, clonedpairs) {
+  cloned = cloned || [];
+  clonedpairs = clonedpairs || [];
+
+  if (cloned.indexOf(oToBeCloned) > -1) {
+    return clonedpairs[cloned.indexOf(oToBeCloned)];
+  }
+
   if (oToBeCloned === null || !(oToBeCloned instanceof Object)) { return oToBeCloned; }
   var oClone, fConstr = oToBeCloned.constructor;
   switch (fConstr) {
@@ -54,15 +61,17 @@ function clone (oToBeCloned) {
     case Date:
       oClone = new fConstr(oToBeCloned.getTime());
       break;
-    case Buffer:
-      oClone = new Buffer(oToBeCloned.length);
-      oToBeCloned.copy(oClone);
-      break;
     // etc.
     default:
-      oClone = new fConstr();
+      if (Buffer.isBuffer(oToBeCloned)) {
+        oClone = new Buffer(oToBeCloned.length);
+        oToBeCloned.copy(oClone);
+      } else {
+        oClone = new fConstr();
+        cloned.push(oToBeCloned); clonedpairs.push(oClone); 
+      }
   }
-  for (var sProp in oToBeCloned) { oClone[sProp] = clone(oToBeCloned[sProp]); }
+  for (var sProp in oToBeCloned) { oClone[sProp] = clone(oToBeCloned[sProp], cloned, clonedpairs); }
   return oClone;
 }
 

@@ -5,11 +5,15 @@
   "description": "Implements the structured clone algorithm. Clone JSON types, RegExp, Buffers, and Dates, returning a cloned object or a buffer that can be deserialized into a structured clone.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node_modules/.bin/tap test/*.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "multibuffer": "~2.2.1"
+  },
+  "devDependencies": {
+    "tap": "~0.4.8",
+    "tape": "~2.10.2"
   }
 }
