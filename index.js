@@ -63,6 +63,7 @@ function clone (oToBeCloned) {
   return oClone;
 }
 
-exports.clone = clone;
-exports.serialize = serialize;
+module.exports = clone;
+module.exports.clone = clone;
+module.exports.serialize = serialize;
 exports.deserialize = deserialize;

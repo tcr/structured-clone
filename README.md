@@ -6,6 +6,10 @@ Implements the [structured clone algorithm](https://developer.mozilla.org/en-US/
 npm install structured-clone
 ```
 
-* structured.**clone**(obj) &rarr; *Object*
-* structured.**serialize**(obj) &rarr; *Buffer*
-* structured.**deserialize**(buf) &rarr; *Object*
+```js
+var clone = require('structured-clone');
+```
+
+* **clone**(obj) &rarr; *Object*
+* clone.**serialize**(obj) &rarr; *Buffer*
+* clone.**deserialize**(buf) &rarr; *Object*
