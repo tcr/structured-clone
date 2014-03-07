@@ -151,42 +151,45 @@ function rerez($, $$, $$$, $$$$) {
     var px =
         /^\${1,4}(?:\[(?:\d+|\"(?:[^\\\"\u0000-\u001f]|\\([\\\"\/bfnrt]|u[0-9a-zA-Z]{4}))*\")\])*$/;
 
-    (function rez(value) {
+    function redo (item) {
+        if (item && typeof item === 'object') {
+            var path = item.$ref;
+            if (typeof path === 'string' && px.test(path)) {
+                return eval(path);
+            } else {
+                if (typeof path === 'string' && path[0] == '!') {
+                    item.$ref = path.substr(1);
+                }
+                rez(item, $$, $$$, $$$$);
+            }
+        }
+        return item;
+    }
+
+    function rez(value) {
 
 // The rez function walks recursively through the object looking for $ref
 // properties. When it finds one that has a value that is a path, then it
 // replaces the $ref object with a reference to the value that is found by
 // the path.
 
-        var i, item, name, path;
-
-        function redo (value, key) {
-        	item = value[key]
-        	if (item && typeof item === 'object') {
-                path = item.$ref;
-                if (typeof path === 'string' && px.test(path)) {
-                    value[key] = eval(path);
-                } else {
-                	if (typeof path === 'string' && path[0] == '!') {
-                    	item.$ref = path.substr(1);
-                    }
-                    rez(item, $$, $$$, $$$$);
-                }
-            }
-        }
+        var i, name;
 
         if (value && typeof value === 'object') {
             if (Array.isArray(value)) {
                 for (i = 0; i < value.length; i += 1) {
-                    redo(value, i);
+                    value[i] = redo(value[i]);
                 }
             } else {
                 for (name in value) {
-                	redo(value, name);
+                	value[name] = redo(value[name]);
                 }
             }
         }
-    }($, $$, $$$, $$$$));
+    }
+
+    $ = redo($)
+
     return $;
 };
 

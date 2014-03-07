@@ -13,7 +13,6 @@ test('deep cloning test', function (t) {
 	a.f = new Date()
 	a.g = /ab+a/i
 
-	console.log('hi')
 	var a = clone(a);
 
 	t.ok(a.b == a);
@@ -62,3 +61,25 @@ test('serializing test', function (t) {
 	t.ok(a.f instanceof Date);
 	t.ok(a.g instanceof RegExp);
 })
+
+test('deep copy root object', function (t) {
+	t.plan(3);
+
+	var clone = require('../');
+
+	var buf = clone(new Buffer([0xca, 0xfe, 0xba, 0xbe]));
+	t.ok(Buffer.isBuffer(buf));
+	t.ok(buf.length == 4);
+	t.ok(buf.readUInt32BE(0) == 0xcafebabe);
+});
+
+test('serializing root object', function (t) {
+	t.plan(3);
+
+	var clone = require('../');
+
+	var buf = clone.deserialize(clone.serialize(new Buffer([0xca, 0xfe, 0xba, 0xbe])));
+	t.ok(Buffer.isBuffer(buf));
+	t.ok(buf.length == 4);
+	t.ok(buf.readUInt32BE(0) == 0xcafebabe);
+});

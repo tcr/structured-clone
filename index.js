@@ -69,9 +69,9 @@ function clone (oToBeCloned, cloned, clonedpairs) {
       } else {
         oClone = new fConstr();
         cloned.push(oToBeCloned); clonedpairs.push(oClone); 
+        for (var sProp in oToBeCloned) { oClone[sProp] = clone(oToBeCloned[sProp], cloned, clonedpairs); }
       }
   }
-  for (var sProp in oToBeCloned) { oClone[sProp] = clone(oToBeCloned[sProp], cloned, clonedpairs); }
   return oClone;
 }
 
