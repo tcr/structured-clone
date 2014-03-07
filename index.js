@@ -4,8 +4,8 @@ var regexpClone = require('./regexp-clone');
 
 
 
-function serialize () {
-	var map = cycle.decycle(a)
+function serialize (obj) {
+	var map = cycle.decycle(obj)
 	return multibuffer.pack([
 		new Buffer(JSON.stringify(map.json)),
 		multibuffer.pack(map.buffers),
