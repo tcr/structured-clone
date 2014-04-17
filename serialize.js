@@ -19,13 +19,11 @@
     retrocycle, stringify, test, toString
 */
 
-var multibuffer = require("multibuffer")
+var multibuffer = require('multibuffer');
 
-var cycle = exports;
 
-// The derez recurses through the object, producing the deep copy.
-
-function encodeRegExp (regexp) {
+function encodeRegExp (regexp)
+{
     var flags = '';
     if (regexp.global) flags += 'g';
     if (regexp.multiline) flags += 'm';
@@ -33,16 +31,22 @@ function encodeRegExp (regexp) {
     return [flags, regexp.source].join(',');
 }
 
-function decodeRegExp (str) {
+function decodeRegExp (str)
+{
     var flags = str.match(/^[^,]*/)[0];
     var source = str.substr(flags.length + 1);
     return new RegExp(source, flags);
 }
 
-function derez(value, path, objects, paths, buffers, dates, regexps) {
 
+// The derez recurses through the object, producing the deep copy.
+
+function derez(value, path, objects, paths, buffers)
+{
     if (Buffer.isBuffer(value)) {
-        return '\x10b' + (buffers.push(value) - 1);
+        var start = Buffer.concat(buffers).length;
+        buffers.push(value);
+        return '\x10b' + [start, value.length].join(',')
     }
     if (value instanceof Date) {
         return '\x10d' + value.toJSON();
@@ -85,8 +89,9 @@ function derez(value, path, objects, paths, buffers, dates, regexps) {
         if (Array.isArray(value)) {
             nu = [];
             for (i = 0; i < value.length; i += 1) {
-                nu[i] = derez(value[i], path + '[' + i + ']',
-                	objects, paths, buffers, dates, regexps);
+                nu[i] = derez(value[i],
+                    path + '[' + i + ']',
+                	objects, paths, buffers);
             }
         } else {
 
@@ -97,52 +102,19 @@ function derez(value, path, objects, paths, buffers, dates, regexps) {
                 if (Object.prototype.hasOwnProperty.call(value, name) && value != '__proto__') {
                     nu[name] = derez(value[name],
                         path + '[' + JSON.stringify(name) + ']',
-                        objects, paths, buffers, dates, regexps);
+                        objects, paths, buffers);
                 }
             }
         }
         return nu;
     }
-    
+
     return value;
 }
 
-cycle.decycle = function decycle(object) {
-    'use strict';
 
-// Make a deep copy of an object or array, assuring that there is at most
-// one instance of each object or array in the resulting structure. The
-// duplicate references (which might be forming cycles) are replaced with
-// an object of the form
-//      {$ref: PATH}
-// where the PATH is a JSONPath string that locates the first occurance.
-// So,
-//      var a = [];
-//      a[0] = a;
-//      return JSON.stringify(JSON.decycle(a));
-// produces the string '[{"$ref":"$"}]'.
-
-// JSONPath is used to locate the unique object. $ indicates the top level of
-// the object or array. [NUMBER] or [STRING] indicates a child member or
-// property.
-
-    var objects = [],   // Keep a reference to each unique object or array
-        paths = [],     // Keep the path to each unique object or array
-        buffers = [],
-        dates = [],
-        regexps = [];   // Returned buffers
-
-    return {
-    	json: derez(object, '$',
-    		objects, paths, buffers, dates, regexps),
-    	buffers: buffers,
-    	dates: dates,
-    	regexps: regexps,
-    }
-};
-
-
-function rerez($, $$, $$$, $$$$) {
+function rerez($, $$)
+{
 
 // Restore an object that was reduced by decycle. Members whose values are
 // objects of the form
@@ -170,7 +142,9 @@ function rerez($, $$, $$$, $$$$) {
         if (typeof item == 'string' && item.charAt(0) == '\x10') {
             switch (item.charAt(1)) {
             case 's': return item.substr(2);
-            case 'b': return $$[parseInt(item.substr(2))];
+            case 'b':
+                var bounds = item.substr(2).split(',', 2);
+                return $$.slice(bounds[0] || 0, (bounds[0] || 0) + (bounds[1] || [0]));
             case 'd': return new Date(item.substr(2));
             case 'r': return decodeRegExp(item.substr(2));
             case 'j':
@@ -183,7 +157,7 @@ function rerez($, $$, $$$, $$$$) {
         }
 
         if (item && typeof item === 'object') {
-            rez(item, $$, $$$, $$$$);
+            rez(item, $$);
         }
         return item;
     }
@@ -215,7 +189,21 @@ function rerez($, $$, $$$, $$$$) {
     return $;
 };
 
-cycle.retrocycle = function retrocycle($) {
-    'use strict';
-    return rerez($.json, $.buffers, $.dates, $.regexps);
+
+// Public API
+
+exports.serialize = function (object) {
+    var objects = [],   // Keep a reference to each unique object or array
+        paths = [],     // Keep the path to each unique object or array
+        buffers = [];   // Returned buffers
+
+    return multibuffer.pack([
+        new Buffer(JSON.stringify(derez(object, '$', objects, paths, buffers))),
+        Buffer.concat(buffers)
+    ]);
+}
+
+exports.deserialize = function (buf) {
+    var map = multibuffer.unpack(buf)
+    return rerez(JSON.parse(map[0].toString('utf-8')), map[1]);
 }
