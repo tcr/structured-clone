@@ -23,9 +23,36 @@ var multibuffer = require("multibuffer")
 
 var cycle = exports;
 
+// The derez recurses through the object, producing the deep copy.
+
+function encodeRegExp (regexp) {
+    var flags = '';
+    if (regexp.global) flags += 'g';
+    if (regexp.multiline) flags += 'm';
+    if (regexp.ignoreCase) flags += 'i';
+    return [flags, regexp.source].join(',');
+}
+
+function decodeRegExp (str) {
+    var flags = str.match(/^[^,]*/)[0];
+    var source = str.substr(flags.length + 1);
+    return new RegExp(source, flags);
+}
+
 function derez(value, path, objects, paths, buffers, dates, regexps) {
 
-// The derez recurses through the object, producing the deep copy.
+    if (Buffer.isBuffer(value)) {
+        return '\x10b' + (buffers.push(value) - 1);
+    }
+    if (value instanceof Date) {
+        return '\x10d' + value.toJSON();
+    }
+    if (value instanceof RegExp) {
+        return '\x10r' + encodeRegExp(value);
+    }
+    if (typeof value == 'string') {
+        return value.charAt(0) == '\x10' ? '\x10s' + value : value;
+    }
 
     var i,          // The loop counter
         name,       // Property name
@@ -35,12 +62,9 @@ function derez(value, path, objects, paths, buffers, dates, regexps) {
 // one of the weird builtin objects.
 
     if (typeof value === 'object' && value !== null &&
-            !(value instanceof Boolean) &&
-            !(value instanceof Date)    &&
-            !(value instanceof Number)  &&
-            !(value instanceof RegExp)  &&
-            !(value instanceof Buffer)  &&
-            !(value instanceof String)) {
+        !(value instanceof Boolean) &&
+        !(value instanceof Number)  &&
+        !(value instanceof String)) {
 
 // If the value is an object or array, look to see if we have already
 // encountered it. If so, return a $ref/path object. This is a hard way,
@@ -48,7 +72,7 @@ function derez(value, path, objects, paths, buffers, dates, regexps) {
 
         i = objects.indexOf(value);
         if (i !== -1) {
-            return {$ref: paths[i]};
+            return '\x10j' + paths[i];
         }
 
 // Otherwise, accumulate the unique value and its path.
@@ -71,24 +95,15 @@ function derez(value, path, objects, paths, buffers, dates, regexps) {
             nu = {};
             for (name in value) {
                 if (Object.prototype.hasOwnProperty.call(value, name) && value != '__proto__') {
-                	if (name == '$ref' && typeof value[name] == 'string') {
-                		nu[name] = '!' + value[name]
-                	} else {
-	                    nu[name] = derez(value[name],
-	                        path + '[' + JSON.stringify(name) + ']',
-	                        objects, paths, buffers, dates, regexps);
-	                }
+                    nu[name] = derez(value[name],
+                        path + '[' + JSON.stringify(name) + ']',
+                        objects, paths, buffers, dates, regexps);
                 }
             }
         }
         return nu;
-    } else if (value instanceof Buffer) {
-    	return { $ref: '$$[' + (buffers.push(value) - 1) + ']' };
-    } else if (value instanceof Date) {
-    	return { $ref: '$$$[' + (dates.push(value) - 1) + ']' };
-    } else if (value instanceof RegExp) {
-    	return { $ref: '$$$$[' + (regexps.push(value) - 1) + ']' };
     }
+    
     return value;
 }
 
@@ -152,16 +167,23 @@ function rerez($, $$, $$$, $$$$) {
         /^\${1,4}(?:\[(?:\d+|\"(?:[^\\\"\u0000-\u001f]|\\([\\\"\/bfnrt]|u[0-9a-zA-Z]{4}))*\")\])*$/;
 
     function redo (item) {
-        if (item && typeof item === 'object') {
-            var path = item.$ref;
-            if (typeof path === 'string' && px.test(path)) {
-                return eval(path);
-            } else {
-                if (typeof path === 'string' && path[0] == '!') {
-                    item.$ref = path.substr(1);
+        if (typeof item == 'string' && item.charAt(0) == '\x10') {
+            switch (item.charAt(1)) {
+            case 's': return item.substr(2);
+            case 'b': return $$[parseInt(item.substr(2))];
+            case 'd': return new Date(item.substr(2));
+            case 'r': return decodeRegExp(item.substr(2));
+            case 'j':
+                var path = item.substr(2);
+                if (px.test(path)) {
+                    return eval(path);
                 }
-                rez(item, $$, $$$, $$$$);
+            default: return null;
             }
+        }
+
+        if (item && typeof item === 'object') {
+            rez(item, $$, $$$, $$$$);
         }
         return item;
     }

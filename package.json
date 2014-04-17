@@ -1,6 +1,6 @@
 {
   "name": "structured-clone",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "repository": "tessel/structured-clone",
   "description": "Implements the structured clone algorithm. Clone JSON types, RegExp, Buffers, and Dates, returning a cloned object or a buffer that can be deserialized into a structured clone.",
   "main": "index.js",
