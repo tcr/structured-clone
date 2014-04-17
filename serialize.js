@@ -1,26 +1,5 @@
-/*
-    cycle.js
-    2013-02-19
-
-    Public Domain.
-
-    NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
-
-    This code should be minified before deployment.
-    See http://javascript.crockford.com/jsmin.html
-
-    USE YOUR OWN COPY. IT IS EXTREMELY UNWISE TO LOAD CODE FROM SERVERS YOU DO
-    NOT CONTROL.
-*/
-
-/*jslint evil: true, regexp: true */
-
-/*members $ref, apply, call, decycle, hasOwnProperty, length, prototype, push,
-    retrocycle, stringify, test, toString
-*/
-
-var multibuffer = require('multibuffer');
-
+// Implements serialize/deserialize of structured clones.
+// Also resolves cycles (code based on cycle.js by Douglas Crockford)
 
 function encodeRegExp (regexp)
 {
@@ -197,13 +176,40 @@ exports.serialize = function (object) {
         paths = [],     // Keep the path to each unique object or array
         buffers = [];   // Returned buffers
 
-    return multibuffer.pack([
-        new Buffer(JSON.stringify(derez(object, '$', objects, paths, buffers))),
+    var nilbyte = new Buffer([0x00]);
+
+    if (Buffer.isBuffer(object)) {
+        return Buffer.concat([
+            nilbyte,
+            object
+        ]);
+    }
+
+    var json = new Buffer(JSON.stringify(derez(object, '$', objects, paths, buffers)));
+    if (buffers.length == 0) {
+        return json;
+    }
+
+    return Buffer.concat([
+        json,
+        nilbyte,
         Buffer.concat(buffers)
     ]);
 }
 
 exports.deserialize = function (buf) {
-    var map = multibuffer.unpack(buf)
-    return rerez(JSON.parse(map[0].toString('utf-8')), map[1]);
+    for (var i = 0; i <= buf.length; i++) {
+        if (buf[i] == 0x00 || buf[i] == null) {
+            break;
+        }
+    }
+    var jsonbuf = buf.slice(0, i);
+    var bufbuf = buf.slice(i + 1);
+
+    // Shortcut for only encoding a root buffer. 
+    if (jsonbuf.length == 0) {
+        return bufbuf;
+    }
+
+    return rerez(JSON.parse(jsonbuf.toString('utf-8')), bufbuf);
 }
