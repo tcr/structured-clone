@@ -83,3 +83,18 @@ test('serializing root object', function (t) {
   t.ok(buf.length == 4);
   t.ok(buf.readUInt32BE(0) == 0xcafebabe);
 });
+
+
+test('errors', function (t) {
+  t.plan(4);
+
+  var clone = require('../');
+
+  var err = clone(new Error('boo!'));
+  t.ok(err instanceof Error);
+  t.ok(err.message == 'boo!');
+
+  var err = clone.deserialize(clone.serialize(new Error('boo!')));
+  t.ok(err instanceof Error);
+  t.ok(err.message == 'boo!');
+});

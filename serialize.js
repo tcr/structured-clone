@@ -33,6 +33,9 @@ function derez(value, path, objects, paths, buffers)
   if (value instanceof RegExp) {
     return '\x10r' + encodeRegExp(value);
   }
+  if (value instanceof Error) {
+    return '\x10e' + value.message
+  }
   if (typeof value == 'string') {
     return value.charAt(0) == '\x10' ? '\x10s' + value : value;
   }
@@ -120,12 +123,17 @@ function rerez($, $$)
   function redo (item) {
     if (typeof item == 'string' && item.charAt(0) == '\x10') {
       switch (item.charAt(1)) {
-      case 's': return item.substr(2);
+      case 's':
+        return item.substr(2);
       case 'b':
         var bounds = item.substr(2).split(',', 2);
         return $$.slice(bounds[0] || 0, (bounds[0] || 0) + (bounds[1] || [0]));
-      case 'd': return new Date(item.substr(2));
-      case 'r': return decodeRegExp(item.substr(2));
+      case 'd':
+        return new Date(item.substr(2));
+      case 'r':
+        return decodeRegExp(item.substr(2));
+      case 'e':
+        return new Error(item.substr(2));
       case 'j':
         var path = item.substr(2);
         if (px.test(path)) {

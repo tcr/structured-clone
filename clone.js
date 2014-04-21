@@ -24,6 +24,8 @@ function clone (oToBeCloned, cloned, clonedpairs)
       if (Buffer.isBuffer(oToBeCloned)) {
         oClone = new Buffer(oToBeCloned.length);
         oToBeCloned.copy(oClone);
+      } else if (oToBeCloned instanceof Error) {
+        oClone = new Error(oToBeCloned.message);
       } else {
         oClone = new fConstr();
         cloned.push(oToBeCloned); clonedpairs.push(oClone); 
