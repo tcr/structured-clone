@@ -127,7 +127,7 @@ function rerez($, $$)
         return item.substr(2);
       case 'b':
         var bounds = item.substr(2).split(',', 2);
-        return $$.slice(bounds[0] || 0, (bounds[0] || 0) + (bounds[1] || [0]));
+        return $$.slice(parseInt(bounds[0]) || 0, (parseInt(bounds[0]) || 0) + (parseInt(bounds[1]) || [0]));
       case 'd':
         return new Date(item.substr(2));
       case 'r':
