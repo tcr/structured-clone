@@ -98,3 +98,30 @@ test('errors', function (t) {
   t.ok(err instanceof Error);
   t.ok(err.message == 'boo!');
 });
+
+test('arrays of buffers', function(t) {
+  t.plan(5);
+
+  var b1 = new Buffer([0, 1, 2, 3, 4, 5]);
+  var b2 = new Buffer([6, 7, 8, 9, 10, 11]);
+  var arr = [b1, b2];
+
+  var clone = require('../');
+
+  var buf = clone.deserialize(clone.serialize(arr));
+
+  t.ok(buf.length === arr.length);
+  t.ok(buf[0].length === arr[0].length);
+  t.ok(buf[1].length === arr[0].length);
+
+  function bufferEqual (a, b) {
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
+  t.ok(bufferEqual(buf[0], arr[0]));
+  t.ok(bufferEqual(buf[1], arr[1]));
+
+})
